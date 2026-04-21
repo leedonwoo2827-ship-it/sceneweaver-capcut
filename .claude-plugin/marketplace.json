@@ -1,0 +1,21 @@
+{
+  "name": "sceneweaver-capcut",
+  "owner": {
+    "name": "leedonwoo2827-ship-it",
+    "url": "https://github.com/leedonwoo2827-ship-it"
+  },
+  "metadata": {
+    "description": "CapCut 8.x 데스크톱 전용 드래프트 빌더. ScriptForge 마스터 대본과 FlowGenie/TTS 산출물을 조합해 CapCut이 직접 열 수 있는 드래프트 폴더를 생성한다. FFmpeg 버전은 별도 레포(sceneweaver).",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "sceneweaver-capcut",
+      "source": "./",
+      "version": "0.1.0",
+      "description": "마스터 대본 JSON + 이미지 + 내레이션 + 편집 SRT → CapCut 8.x 드래프트 폴더. 자산 수집 → SRT 자막 생성 → 사람 검수 → 드래프트 빌드 4단계 파이프라인. v0.1은 스키마 분석 진행 중 스텁.",
+      "category": "content-production",
+      "tags": ["sceneweaver", "capcut", "capcut8", "video-assembly", "draft-generator", "subtitle", "srt", "scriptforge", "flowgenie"]
+    }
+  ]
+}
