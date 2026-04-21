@@ -41,6 +41,25 @@ _assetst/0421/               ← CapCut 8.5.0 실제 드래프트 폴더
 | (없음) | `draft_cover.jpg` | 드래프트 썸네일 이미지 파일. 프로젝트 목록 표시용 |
 | (없음) | `adjust_mask/`, `matting/`, `smart_crop/` 등 하위 폴더 | 편집 기능별 캐시. 비어있어도 폴더 자체는 존재 |
 
+## 2026-04-21 검증 결과 ★ ch01 실빌드 성공
+
+v0.1 스텁 상태에서 "샘플 기반 수동 조립" 지시로 Claude가 ch01 드래프트를 어셈블 → CapCut 8.5.0에서 **정상 로드 확인**. 폴더명 `ch01_draft_20260421`, 씬 20 + 오디오 20 타임라인 정상 배치, 길이 8:01.
+
+### 추가 발견 (반드시 v0.2 빌더에 반영)
+
+**`%LOCALAPPDATA%\CapCut\User Data\Projects\com.lveditor.draft\root_meta_info.json`** 이라는 **CapCut 전역 드래프트 레지스트리** 파일이 루트에 존재한다. 이 파일의 `all_draft_store` 배열에 신규 드래프트 엔트리를 추가해야 **CapCut 프로젝트 목록에 표시**된다. 드래프트 폴더만 복사하고 `root_meta_info.json` 을 건드리지 않으면 CapCut은 인식하지 못함 — v0.2.x 시절 빌더 실패의 또다른 원인.
+
+v0.2 빌더가 해야 할 일:
+1. `root_meta_info.json` 읽기 → 백업 생성 (`.bak_before_{chapter}`)
+2. `all_draft_store` 에 새 드래프트 엔트리 추가 (UUID, 폴더명, 썸네일, 생성시각 등)
+3. 저장 → CapCut 재시작 후 목록에 표시됨
+
+### 미완 (v0.2에서 다룰 것)
+
+- 자막 자동 import: 현재는 CapCut UI에서 `Import → Subtitle` 로 `Resources/ch01_*.srt` 21개를 수동 불러와야 함. 타임라인 자막 트랙에 자동 삽입되는 구조는 `draft_content.json` 의 추가 분석 필요.
+
+---
+
 ## 2026-04-21 초기 관찰 (draft_meta_info.json 만 분석)
 
 샘플의 `draft_meta_info.json` 에서 **"비정상적인 경로" 에러의 유력 원인** 3가지가 드러났다:

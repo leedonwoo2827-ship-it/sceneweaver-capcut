@@ -38,15 +38,15 @@ StoryLens → ScriptForge → FlowGenie + TTS → [SceneWeaver-CapCut]
 
 ### 최초 (ingest 실행 전 — 외부 스테이징 폴더)
 
-상류 3개 프로젝트를 거치지 않고 구글드라이브 등에서 받은 자산을 수동으로 모은 경우의 원본 보관 구조. 예: `D:\cl150y\ch01\`.
+상류 3개 프로젝트를 거치지 않고 구글드라이브 등에서 받은 자산을 수동으로 모은 경우의 원본 보관 구조. 예: `D:\cl150y\ch02\`.
 
 ```
-D:\cl150y\ch01\
-├── script\ch01_script.json
+D:\cl150y\ch02\
+├── script\ch02_script.json
 ├── images\                      ← 이미지 로데이터
-│   ├── ch01_01_*.jpeg
+│   ├── ch02_01_*.jpeg
 │   ├── ...
-│   └── ch01_20_*.jpeg
+│   └── ch02_20_*.jpeg
 └── audio\                       ← 음성 로데이터
     ├── 01.wav  (또는 1.wav)
     ├── ...
@@ -58,7 +58,7 @@ ingest가 `.jpeg`/`.wav`/숫자 전용 이름을 자동 정규화.
 ### 드래프트 빌드 후 (`/weave-draft` 실행 후 예정)
 
 ```
-workspace/ch01/
+workspace/ch02/
 ├── script.json
 ├── images/, audio/, subtitles/
 └── draft/                                    ← ★ CapCut 드래프트
@@ -67,33 +67,33 @@ workspace/ch01/
     ├── draft_cover.jpg
     ├── (v8.x 부속 파일들)
     └── Resources/
-        ├── ch01_{SS}_image.jpeg
-        ├── ch01_{SS}_narration.wav
-        └── ch01_{SS}.srt
+        ├── ch02_{SS}_image.jpeg
+        ├── ch02_{SS}_narration.wav
+        └── ch02_{SS}.srt
 ```
 
 ## 실행 순서 (v0.1 — 인터페이스 기준)
 
 **1단계 — 자산 수집**
 ```
-/weave-ingest 1 --script-path D:\cl150y\ch01\script\ch01_script.json --images-dir D:\cl150y\ch01\images --audio-dir D:\cl150y\ch01\audio
+/weave-ingest 2 --script-path D:\cl150y\ch02\script\ch02_script.json --images-dir D:\cl150y\ch02\images --audio-dir D:\cl150y\ch02\audio
 ```
 
 **2단계 — 자막 생성**
 ```
-/weave-subtitle 1
+/weave-subtitle 2
 ```
-→ `workspace/ch01/subtitles/` SRT 편집 → "수정 끝났어"
+→ `workspace/ch02/subtitles/` SRT 편집 → "수정 끝났어"
 
 **3단계 — CapCut 드래프트 빌드**
 ```
-/weave-draft 1 --install
+/weave-draft 2 --install
 ```
 → `%LOCALAPPDATA%\CapCut\User Data\Projects\com.lveditor.draft\` 자동 복사. CapCut 재시작 → 드래프트 목록에서 열기.
 
 **한 방 실행**
 ```
-/weave 1 --script-path ... --images-dir ... --audio-dir ... --install
+/weave 2 --script-path ... --images-dir ... --audio-dir ... --install
 ```
 
 ## 현재 상태 (v0.1)
@@ -105,9 +105,11 @@ workspace/ch01/
 | SRT 자막 생성 + 편집 개입 | ✅ 기존 로직 승계 |
 | CapCut 8.x 샘플 JSON 확보 | ✅ [`_assetst/0421/`](_assetst/0421/) |
 | CapCut 8.x 스키마 분석 | 🔄 진행 중 — [knowledge/capcut8-schema.md](knowledge/capcut8-schema.md) |
-| `draft_content.json` 필드 매핑 | ⏳ 다음 세션 |
-| `build-capcut-draft` 실체 구현 | ⏳ 다음 세션 |
-| ch01 빌드 → CapCut 열기 검증 | ⏳ 구현 후 |
+| `draft_content.json` 필드 매핑 | 🔄 샘플 기반 수동 조립 성공 (2026-04-21) |
+| **`root_meta_info.json` 전역 레지스트리 발견** | ✅ 드래프트 목록에 뜨려면 `all_draft_store` 에 엔트리 추가 필요 |
+| ch01 실빌드 → CapCut 8.5.0 열기 검증 | ✅ **성공 (2026-04-21)** — 씬 20 + 오디오 20 타임라인 정상, 길이 8:01 |
+| 자막 자동 import | ⏳ 다음 세션 (현재는 CapCut UI에서 Import → Subtitle 수동) |
+| `build-capcut-draft` v0.2 자동화 | ⏳ 다음 세션 |
 
 ## 왜 별도 레포인가
 
