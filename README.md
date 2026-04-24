@@ -118,11 +118,15 @@ workspace/ch02/
 - **sceneweaver**: `ch{NN}.mp4` 한 파일 → 바로 업로드/배포
 - **sceneweaver-capcut** (이 레포): `draft/` 폴더 → CapCut 8.x에서 열어 편집
 
+## 다른 PC 에서 처음 쓰시나요
+
+[docs/OTHER-PC-SETUP.md](docs/OTHER-PC-SETUP.md) 에 **처음 clone/pull 받은 분을 위한 전체 세팅 가이드** 가 있습니다. CapCut 첫 실행 체크리스트, 수동 조립 (A안) / Claude 반자동 (B안) 흐름, `root_meta_info.json` 전역 레지스트리 수정법, 트러블슈팅 표 포함.
+
 ## 문제 해결
 
 - **"비정상적인 경로" 에러** — CapCut 4.x 스키마로 만든 드래프트는 8.x에서 열리지 않음. 이 레포가 해결하려는 문제.
 - **자막이 깨진다** — SRT 인코딩 UTF-8 BOM + CRLF, 타이밍 `HH:MM:SS,mmm` 형식 확인.
-- **드래프트 목록에 안 보임** — CapCut 완전 종료(작업관리자 프로세스까지) 후 재시작.
+- **드래프트 목록에 안 보임** — 두 가지 원인. (1) `%LOCALAPPDATA%\CapCut\User Data\Projects\com.lveditor.draft\root_meta_info.json` 의 `all_draft_store` 에 드래프트 엔트리가 없음 (단순 폴더 복사만으로는 안 보임). (2) CapCut 프로세스가 트레이/작업관리자에 남아있어 캐시된 목록 표시. 상세는 [docs/OTHER-PC-SETUP.md](docs/OTHER-PC-SETUP.md) §3 참고.
 
 ## 라이선스
 
