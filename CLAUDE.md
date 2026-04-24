@@ -91,12 +91,16 @@ workspace/ch{NN}/
 - **CapCut 8.5.0+** 데스크톱 (Windows/Mac)
 - Claude Code 플러그인 설치: `/plugin marketplace add leedonwoo2827-ship-it/sceneweaver-capcut` → `/plugin install sceneweaver-capcut@sceneweaver-capcut`
 
-## 현재 상태 (v0.1)
+## 현재 상태 (v0.1.1, 2026-04-21 기준)
 
 - [x] 프로젝트 뼈대 (sceneweaver v0.3에서 분기)
 - [x] CapCut 8.x 샘플 JSON 확보 (`_assetst/0421/`)
-- [ ] `draft_content.json` / `draft_meta_info.json` 필드 분석
-- [ ] 최소 필수 부속 파일 세트 식별
-- [ ] `transition_hint` / `mood` / `era` 매핑 테이블 확정
-- [ ] `build-capcut-draft` 실체 구현
-- [ ] ch01 빌드 → CapCut 8.5.0 열기 검증
+- [x] `draft_content.json` / `draft_meta_info.json` 기본 필드 분석 ([knowledge/capcut8-schema.md](knowledge/capcut8-schema.md))
+- [x] v4.x → v8.x 차이 규명 (`draft_info.json` → `draft_content.json`, `materials/` → `Resources/`, 신규 부속 파일 10+)
+- [x] "비정상적인 경로" 에러 원인 3종 규명 (절대경로 하드코딩, 소스 파일 경로, draft_id 규칙)
+- [x] `root_meta_info.json` 전역 드래프트 레지스트리 발견 (`all_draft_store` 수정 필수)
+- [x] ch01 수동 조립 빌드 → CapCut 8.5.0 정상 로드 (씬 20 + 오디오 20, 8:01)
+- [x] 자막 트랙 주입기 ([skills/build-capcut-draft/inject_subtitles.py](skills/build-capcut-draft/inject_subtitles.py))
+- [ ] end-to-end 자동 빌더 (`/weave-draft` 스크립트화)
+- [ ] `root_meta_info.json` 자동 갱신
+- [ ] `transition_hint` / `mood` / `era` 매핑 테이블 확정 (추가 샘플 필요)
