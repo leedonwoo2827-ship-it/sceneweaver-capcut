@@ -87,6 +87,34 @@ ScriptForge 가 만든 자산이 `<자산루트>\ch02\` 같은 외부 폴더에 
 
 ## 3. 한 줄 실행 (가장 일반적인 경우)
 
+### 3-A. Claude Code 슬래시 커맨드 (권장)
+
+플러그인 설치한 경우 (§1-3) Claude Code 안에서:
+
+```
+/weave-draft 02
+```
+
+이거 한 줄이면 빌드 + 자막 주입 + CapCut 설치까지 다 됩니다.
+
+옵션:
+- `/weave-draft 02 --no-subtitle` — 자막 없이 빌드만
+- `/weave-draft 02 --no-install` — 워크스페이스에 빌드만 (CapCut 디렉터리 복사 안 함)
+- `/weave-draft 02 --overwrite` — 동명 드래프트 덮어쓰기 (재설치)
+- `/weave-draft 02 --font "C:/Windows/Fonts/NanumGothic.ttf"` — 폰트 변경
+
+ingest·자막 생성까지 풀 파이프라인이 필요하면:
+
+```
+/weave 02
+```
+
+ingest → SRT 생성 → 사람 편집 대기 → 빌드 + 설치 순서로 진행됩니다.
+
+### 3-B. Python 직접 호출
+
+플러그인 없이 쓰는 경우:
+
 ```bash
 # 1. 자산 → 드래프트 폴더 (이미지/오디오만, 자막 없는 상태)
 python skills/build-capcut-draft/build_draft.py 02

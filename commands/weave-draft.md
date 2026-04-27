@@ -1,69 +1,99 @@
 ---
-description: 수집된 자산과 편집된 SRT를 조합하여 CapCut 8.x 데스크톱이 직접 열 수 있는 드래프트 폴더를 생성한다.
-argument-hint: "[챕터 번호] [--install] [--uuid <UUID>]"
+description: workspace/ch{NN}/ 의 자산을 CapCut 8.x 드래프트로 빌드 + (선택) 자막 주입 + (선택) 자동 설치까지 한 번에. 한 줄 명령으로 더블클릭만 하면 열리는 드래프트가 생성된다.
+argument-hint: "[챕터 번호] [--no-subtitle] [--no-install] [--font <path>] [--canvas-w <int>] [--canvas-h <int>] [--overwrite]"
 ---
 
 # /weave-draft
 
-`workspace/ch{NN}/` 의 자산을 CapCut 8.x 드래프트 폴더로 조립한다.
-
-> **⚠ v0.1 스텁** — CapCut 8.x 스키마 샘플 분석 진행 중. 실체 빌드는 다음 세션에서 구현. 현재는 인터페이스 명세와 뼈대만 정의되어 있다.
+`workspace/ch{NN}/` → CapCut 8.x 드래프트 폴더 → CapCut 설치 디렉터리. 기본은 빌드 + 자막 주입 + 설치까지 모두 진행.
 
 ## 사전 조건
 
-- `/weave-ingest` 완료 — script.json + images + audio
-- `/weave-subtitle` 완료 + **사람의 SRT 편집 완료**
-- CapCut 8.5.0+ 데스크톱 설치
+- `workspace/ch{NN}/images/`, `audio/`, (선택) `subtitles/` 자산 존재
+  - 이미지·오디오 개수 일치, 정렬 순서로 1:1 페어링
+  - 자막은 `subtitles/*.srt` (UTF-8 BOM 권장)
+- CapCut 8.5.0+ 데스크톱 설치 + **한 번이라도 실행해서 프로젝트 저장한 적 있음**
+  - `%LOCALAPPDATA%\CapCut\User Data\Projects\com.lveditor.draft\` 와 `root_meta_info.json` 이 있어야 설치 단계 통과
+- Python 3.9+
 
-## 실행 흐름 (예정)
+## 실행 흐름
 
-### Step 1: 검증
-씬 수 vs 이미지·오디오·SRT 수 일치 확인. 불일치 시 중단.
+### Step 1: 빌드
 
-### Step 2: 드래프트 UUID·폴더명 결정
-- UUID 생성 (사용자가 `--uuid` 명시하면 그 값 사용)
-- 폴더명: 샘플 분석 결과에 따라 확정 (UUID 그대로 또는 `ch{NN}_draft_{YYYYMMDD}_{UUID}` 형태)
+```bash
+python skills/build-capcut-draft/build_draft.py {N} [--canvas-w 1920 --canvas-h 1080]
+```
 
-### Step 3: draft_content.json 빌드
-v8.x 메인 본체. 씬 이미지·오디오·자막 트랙을 조립. 시간 단위·필드 구조는 [knowledge/capcut8-schema.md](../knowledge/capcut8-schema.md) 에 따라 확정 예정.
+산출물: `workspace/ch{NN}/draft/` (영상·음성만, 자막 제외)
 
-### Step 4: draft_meta_info.json 빌드
-드래프트 ID·이름·썸네일(`draft_cover.jpg` 자동 생성)·생성 시각.
+### Step 2: 자막 주입 (기본 ON, `--no-subtitle` 로 끔)
 
-### Step 5: 부속 파일 생성
-v8.x 가 요구하는 최소 부속 파일 세트(`draft_agency_config.json`, `draft_biz_config.json`, `draft_virtual_store.json`, 기타). 샘플에서 관찰한 최소 필수 파일만 생성.
+```bash
+python skills/build-capcut-draft/inject_subtitles_v2.py {N} [--font <path>]
+```
 
-### Step 6: Resources/ 구성
-이미지·오디오·자막 사본을 `Resources/` 하위에 배치. 이름 규칙은 샘플 관찰 후 확정.
+`workspace/ch{NN}/subtitles/*.srt` 자동 탐지. 여러 개면 첫 번째 사용.
+SRT 가 없으면 이 단계 자동 스킵.
 
-### Step 7: 설치 안내 또는 자동 설치
-- 기본: 드래프트 폴더 경로만 안내
-- `--install` 옵션: `%LOCALAPPDATA%\CapCut\User Data\Projects\com.lveditor.draft\` 로 직접 복사
+### Step 3: CapCut 설치 (기본 ON, `--no-install` 로 끔)
+
+```bash
+python skills/build-capcut-draft/install_draft.py {N} [--overwrite]
+```
+
+`%LOCALAPPDATA%\CapCut\...\com.lveditor.draft\<draft-name>\` 으로 폴더 복사 + path 필드 자동 재작성 + `root_meta_info.json` 의 `all_draft_store[]` 갱신 (백업 자동 생성).
+
+### Step 4: 사용자 안내
+
+```
+✅ 빌드 + 자막 주입 + 설치 완료
+   드래프트: %LOCALAPPDATA%\CapCut\User Data\Projects\com.lveditor.draft\ch{NN}_draft_{YYYYMMDD}\
+
+다음 단계:
+1. CapCut 완전 종료 (작업관리자에서 CapCut.exe 까지)
+2. CapCut 재실행
+3. 프로젝트 목록에서 ch{NN}_draft_{YYYYMMDD} 더블클릭
+4. 자동 배치된 영상·음성·자막 확인 → 효과·BGM 만 수동 추가 → 렌더
+```
 
 ## 옵션
 
 | 옵션 | 동작 |
 |---|---|
-| `--install` | CapCut 드래프트 디렉터리로 자동 복사 (Cowork 샌드박스에서는 robocopy 스크립트 생성) |
-| `--uuid {UUID}` | 드래프트 ID 수동 지정 |
+| `--no-subtitle` | 자막 주입 단계 스킵 (영상·음성만) |
+| `--no-install` | 설치 단계 스킵 (워크스페이스에 빌드만) |
+| `--font <path>` | 자막 폰트 경로 (default: `C:/Windows/Fonts/malgun.ttf`) |
+| `--canvas-w <int>` / `--canvas-h <int>` | 캔버스 크기 (default: 1920×1080) |
+| `--overwrite` | 동명 드래프트 덮어쓰기 (재설치) |
 
-## 산출물 (예정)
+## 산출물
 
 ```
-workspace/ch{NN}/draft/
+workspace/ch{NN}/draft/                              ← 빌드 결과 (워크스페이스 내)
 ├── draft_content.json
 ├── draft_meta_info.json
 ├── draft_cover.jpg
-├── (v8.x 필수 부속 파일들)
+├── (부속 파일 8개 + 빈 폴더 7개)
 └── Resources/
-    ├── ch{NN}_{SS}_image.{jpeg,png}
-    ├── ch{NN}_{SS}_narration.{wav,mp3}
-    └── ch{NN}_{SS}.srt
+
+%LOCALAPPDATA%\CapCut\User Data\Projects\com.lveditor.draft\ch{NN}_draft_{YYYYMMDD}\   ← 설치 결과
 ```
 
-## 구현 로드맵
+## 트러블슈팅
 
-1. [knowledge/capcut8-schema.md](../knowledge/capcut8-schema.md) 의 "1~4순위" 항목 분석 완료
-2. [skills/build-capcut-draft/SKILL.md](../skills/build-capcut-draft/SKILL.md) 실체 구현
-3. ch01 빌드 → CapCut 8.5.0 에서 열기 검증
-4. 에러 시 필드별 이진 탐색 교정 루프
+| 증상 | 원인 | 해결 |
+|---|---|---|
+| `%LOCALAPPDATA%\CapCut\...` 경로 없음 | CapCut 첫 실행/저장 안 함 | CapCut 실행 → 아무 프로젝트 저장 → 종료 → 재시도 |
+| 드래프트 목록에 안 보임 | CapCut 캐시 | 작업관리자에서 `CapCut.exe` 까지 종료 후 재시작 |
+| 더블클릭해도 안 열림 | 자막을 v1 (`inject_subtitles.py`) 으로 주입함 | `--overwrite` 로 재설치 (v2 가 자동 사용됨) |
+| "비정상적인 경로" 에러 | path 필드들이 실제 위치와 불일치 | `install_draft.py` 가 자동 갱신 — 정상 절차로는 발생 안 함 |
+| 이미지·오디오 개수 불일치 | `images/` 와 `audio/` 파일 수가 다름 | 양쪽 동일하게 맞추기 |
+
+상세: [docs/OTHER-PC-SETUP.md](../docs/OTHER-PC-SETUP.md) §6
+
+## 관련 파일
+
+- [skills/build-capcut-draft/build_draft.py](../skills/build-capcut-draft/build_draft.py)
+- [skills/build-capcut-draft/inject_subtitles_v2.py](../skills/build-capcut-draft/inject_subtitles_v2.py)
+- [skills/build-capcut-draft/install_draft.py](../skills/build-capcut-draft/install_draft.py)
+- [skills/build-capcut-draft/SKILL.md](../skills/build-capcut-draft/SKILL.md)

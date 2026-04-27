@@ -64,7 +64,30 @@ workspace/ch{NN}/
 
 ## 실행 — v0.2 자동화
 
-### 한 줄 흐름
+### 옵션 A — Claude Code 슬래시 커맨드 (권장)
+
+플러그인 설치 후 Claude Code 안에서:
+
+```
+/weave-ingest 02       # 상류 자산 → workspace/ch02/
+/weave-subtitle 02     # SRT 생성 → 사람이 편집
+/weave-draft 02        # 빌드 + 자막 주입 + CapCut 설치 (한 방)
+```
+
+또는 전체 오케스트레이션:
+
+```
+/weave 02              # ingest → subtitle → (사람 편집 대기) → draft + install
+```
+
+`/weave-draft` 옵션:
+- `--no-subtitle` — 자막 주입 스킵
+- `--no-install` — CapCut 설치 스킵 (워크스페이스 빌드만)
+- `--overwrite` — 동명 드래프트 덮어쓰기 (재설치)
+- `--font <path>` — 자막 폰트 변경
+- `--canvas-w <int>` / `--canvas-h <int>` — 캔버스 크기 변경
+
+### 옵션 B — Python 직접 호출
 
 ```bash
 # 1. 빌드
@@ -77,15 +100,9 @@ python skills/build-capcut-draft/inject_subtitles_v2.py 02
 python skills/build-capcut-draft/install_draft.py 02
 ```
 
+### 공통 후속 절차
+
 → CapCut 완전 종료 후 재실행 → 프로젝트 목록에서 `ch02_draft_{YYYYMMDD}` 더블클릭 → 자동 배치된 영상·음성·자막 확인 → 효과·BGM 만 수동 추가하여 렌더.
-
-### 옵션
-
-각 스크립트의 `--help` 참고. 핵심 옵션:
-
-- `build_draft.py 02 --canvas-w 1920 --canvas-h 1080` — 캔버스 변경
-- `inject_subtitles_v2.py 02 --font "C:/Windows/Fonts/NanumGothic.ttf"` — 폰트 변경
-- `install_draft.py 02 --overwrite` — 동명 드래프트 덮어쓰기 (재설치)
 
 ## 산출물
 
