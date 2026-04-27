@@ -16,6 +16,11 @@ _assetst/
 *.capcut
 *.draft.zip
 
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
 # OS
 .DS_Store
 Thumbs.db
