@@ -1,6 +1,6 @@
 # CapCut 8.x 드래프트 폴더 스키마
 
-> **상태 (2026-04-21)**: 기본 필드 분석 완료. v4.x→v8.x 차이 규명, "비정상적인 경로" 원인 3종 규명, `root_meta_info.json` 전역 레지스트리 발견, ch01 수동 조립 드래프트 CapCut 8.5.0 로드 성공. **미완**: `transition_hint`/`mood`/`era` → 효과 `effect_id` 매핑 (추가 샘플 필요).
+> **상태 (2026-04-27, v0.2.0)**: 풀 자동 빌드·설치·자막 주입 검증 완료. ch02 (이미지 23 + 오디오 23 + 자막 200 cue) 자동 생성 → CapCut 8.5.0 정상 로드 + 자막 트랙 정상 배치 확인. v0.1 시절 "비정상적인 경로" 3종 원인, `root_meta_info.json` 전역 레지스트리, 자막 트랙 형식 5필드 fix 모두 확보·자동화. **미완**: `transition_hint`/`mood`/`era` → 효과 `effect_id` 매핑 (v0.3, 추가 샘플 필요).
 >
 > **샘플 위치**: [`_assetst/0421/`](../_assetst/0421/) — CapCut 8.5.0에서 최소 자산(이미지 1장 + 오디오 1개 + 자막 SRT 1개)을 드래그한 뒤 저장한 실제 드래프트 폴더 사본.
 
@@ -177,3 +177,125 @@ v0.2 빌더가 해야 할 일:
 - 샘플 D: 자막 스타일(폰트·크기·위치) 변경된 상태
 
 필요하면 다음 세션 시작 시 요청.
+
+---
+
+## 2026-04-27 v0.2 검증으로 추가 확보된 정보
+
+v0.1 분석 (위) 이후 풀 자동화 (build_draft.py + install_draft.py + inject_subtitles_v2.py) 작성·검증 과정에서 정확히 확인된 추가 사항. 이 PC 의 ch01_draft_20260421 (자막 정상 동작) 과 사용자 PC 의 ch02_draft_20260427 (자막 깨짐) 진단 데이터 기반.
+
+### 자료 참조 패턴 (segment.extra_material_refs)
+
+`draft_content.json` 의 segment 가 어떤 자료 카테고리를 참조하는지:
+
+| segment 타입 | extra_material_refs 개수 | 참조 카테고리 |
+|---|---|---|
+| video | **7** | speeds, placeholder_infos, canvases, sound_channel_mappings, material_colors, loudnesses, vocal_separations |
+| audio | **5** | speeds, placeholder_infos, beats, sound_channel_mappings, vocal_separations |
+| text (자막) | **1** | material_animations |
+
+### 자료 카운트 패턴 (N개 이미지 + N개 오디오 + M개 자막)
+
+| 카테고리 | 개수 |
+|---|---|
+| videos, audios, canvases, material_colors, loudnesses, beats | N |
+| placeholder_infos, sound_channel_mappings, speeds, vocal_separations | **2N** (video + audio segment 별 1개씩) |
+| material_animations, texts | M (자막 cue 수) |
+
+### 자막 트랙 형식 — v1 깨짐 vs v2 정상 (deep diff 결과)
+
+`inject_subtitles.py` (v1) 이 CapCut 8.5.0 에서 거부된 직접 원인. ch01 정상 동작 샘플과 v1 출력 비교 결과 정확히 5개 필드 값만 다름. 키 누락/잉여 0:
+
+| 위치 | 필드 | v1 (깨짐) | v2 (정상) |
+|---|---|---|---|
+| `materials.texts[]` | `check_flag` | 7 | **23** |
+| `materials.texts[]` | `background_alpha` | 1.0 | **0.5** |
+| `materials.texts[]` | `background_color` | "" | **"#000000"** |
+| `materials.texts[]` | `background_style` | 0 | **1** |
+| `tracks[type=text].segments[]` | `track_render_index` | 1 | **2** |
+
+자막 트랙 자체의 `flag=1, attribute=0` 은 v1/v2 동일 (문제 아님).
+
+자막 segment 의 다른 핵심 필드:
+- `clip.transform`: `{"x": 0.0, "y": -0.8}` (화면 하단 위치)
+- `material_id`: 텍스트 자료 UUID
+- `extra_material_refs`: animation 자료 UUID 1개
+- `render_index`: 14000 + 인덱스 (자막 segment 별 14000부터 순차)
+
+### `root_meta_info.json` 전역 레지스트리 — 정확한 필드 셋
+
+새 드래프트가 CapCut 목록에 뜨려면 `all_draft_store[]` 에 추가해야 할 엔트리 (~30개 필드):
+
+**핵심 (반드시 정확해야 함):**
+- `draft_id` — `draft_meta_info.json` 의 `draft_id` 와 일치
+- `draft_fold_path` — 실제 설치 위치 (`%LOCALAPPDATA%\CapCut\...\<폴더명>`)
+- `draft_root_path` — 부모 (`%LOCALAPPDATA%\CapCut\...\com.lveditor.draft`)
+- `draft_name` — 폴더명 (`ch{NN}_draft_{YYYYMMDD}` 권장)
+- `draft_json_file` — `<draft_fold_path>\draft_content.json`
+- `draft_cover` — `<draft_fold_path>\draft_cover.jpg`
+
+**카운터 / 시각:**
+- `draft_timeline_materials_size` — Resources/ 합계 bytes
+- `tm_draft_create`, `tm_draft_modified` — Unix epoch microseconds (16자리 정수)
+- `tm_duration` — 영상 길이 microseconds
+
+**default 값 (~25개):**
+- `cloud_draft_*: false`, `draft_cloud_*: ""`/0/-1
+- `draft_is_*: false` (~7개 boolean flag)
+- `streaming_edit_draft_ready: true`
+- `tm_draft_cloud_*: -1 / 0 / ""`
+- `tm_draft_removed: 0`, `draft_type: ""`
+
+또한 root 레벨에 `draft_ids` += 1 갱신 필요.
+
+### 경로 필드 갱신 (`install_draft.py` 가 자동 처리)
+
+빌더가 만든 드래프트 폴더를 CapCut 디렉터리로 복사한 후, 다음 path 필드들을 실제 설치 위치 기준으로 재작성해야 함 (안 그러면 "비정상적인 경로" 또는 "미디어 없음"):
+
+- `draft_meta_info.json`
+  - `draft_fold_path` / `draft_root_path`
+  - `draft_materials[].value[].file_Path` (이미지/오디오/SRT 모두)
+- `draft_content.json`
+  - `materials.videos[].path`
+  - `materials.audios[].path`
+
+`install_draft.py` 가 이를 자동 처리. 수동 폴더 복사 시에는 직접 갱신 필수.
+
+### UUID 형식
+
+CapCut 은 표준 36자리 UUID (8-4-4-4-12) 를 사용. 4번째 그룹만 소문자, 나머지는 대문자:
+
+```
+606E1F6B-7013-4B48-8f7e-644D865E3EA9
+                    ↑↑↑↑ 소문자
+```
+
+`build_draft.py::gen_uuid()` 가 이 형식으로 생성. 표준 외 형식 (하이픈 누락, 길이 변형) 은 CapCut 이 거부할 가능성 있음.
+
+### 부속 파일 — 최소 필수 세트 (검증됨)
+
+`build_draft.py` 가 생성하고 ch02 검증으로 동작 확인된 부속 파일들 (`templates/` 에 보존):
+
+- `attachment_editing.json` — default 값 객체 (1.7KB, 정적)
+- `draft_agency_config.json` — `video_resolution: 720` 등 (154 bytes, 정적)
+- `draft_biz_config.json` — 빈 파일 (0 bytes)
+- `draft_settings` — INI 형식, `draft_create_time` / `draft_last_edit_time` 동적
+- `draft_virtual_store.json` — 0421 그대로 복사 (UUID 매칭 안 해도 동작)
+- `key_value.json` — 0421 그대로 (3.2KB, 자료 메타. 매칭 안 해도 default 처리됨)
+- `performance_opt_info.json` — 거의 빈 파일 (71 bytes)
+- `timeline_layout.json` — `timelineIds` 동적
+
+빈 폴더 7개 (`adjust_mask`, `common_attachment`, `matting`, `qr_upload`, `smart_crop`, `subdraft`, `Resources`) 도 반드시 존재해야 함.
+
+CapCut 이 자동 생성하는 것 (빌더가 만들 필요 없음):
+- `draft_content.json.bak` (자동 백업)
+- `template.tmp`, `template-2.tmp` (캐시)
+- `draft.extra` (CapCut 메타)
+
+### 회귀 보호 (재발 방지)
+
+자막 트랙이 다시 깨지거나 빌더가 거부되지 않게:
+
+1. **정상 동작 샘플 보존**: `_assetst/0421/` (자막 없는 정상) + 이 PC 의 `ch01_draft_20260421` (자막 정상). git 에는 0421 만 (저작권). ch01 은 PC 에 보존.
+2. **회귀 검증**: 새 빌드 후 ch01 의 `draft_content.json` 과 키 셋 / 자료 카운트 패턴 / 자료 ref 개수 비교
+3. **새 CapCut 버전 대응**: 형식 깨질 시 정상 동작 새 샘플 확보 후 deep-diff 부터. 추측으로 수정 금지 (v1 사고 교훈).

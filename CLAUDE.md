@@ -91,16 +91,20 @@ workspace/ch{NN}/
 - **CapCut 8.5.0+** 데스크톱 (Windows/Mac)
 - Claude Code 플러그인 설치: `/plugin marketplace add leedonwoo2827-ship-it/sceneweaver-capcut` → `/plugin install sceneweaver-capcut@sceneweaver-capcut`
 
-## 현재 상태 (v0.1.1, 2026-04-21 기준)
+## 현재 상태 (v0.2.0, 2026-04-27 기준 — 풀 자동화 검증 완료)
 
 - [x] 프로젝트 뼈대 (sceneweaver v0.3에서 분기)
 - [x] CapCut 8.x 샘플 JSON 확보 (`_assetst/0421/`)
-- [x] `draft_content.json` / `draft_meta_info.json` 기본 필드 분석 ([knowledge/capcut8-schema.md](knowledge/capcut8-schema.md))
-- [x] v4.x → v8.x 차이 규명 (`draft_info.json` → `draft_content.json`, `materials/` → `Resources/`, 신규 부속 파일 10+)
-- [x] "비정상적인 경로" 에러 원인 3종 규명 (절대경로 하드코딩, 소스 파일 경로, draft_id 규칙)
-- [x] `root_meta_info.json` 전역 드래프트 레지스트리 발견 (`all_draft_store` 수정 필수)
-- [x] ch01 수동 조립 빌드 → CapCut 8.5.0 정상 로드 (씬 20 + 오디오 20, 8:01)
-- [x] 자막 트랙 주입기 ([skills/build-capcut-draft/inject_subtitles.py](skills/build-capcut-draft/inject_subtitles.py))
-- [ ] end-to-end 자동 빌더 (`/weave-draft` 스크립트화)
-- [ ] `root_meta_info.json` 자동 갱신
-- [ ] `transition_hint` / `mood` / `era` 매핑 테이블 확정 (추가 샘플 필요)
+- [x] `draft_content.json` / `draft_meta_info.json` 기본 필드 분석
+- [x] v4.x → v8.x 차이 규명 (`draft_info.json` → `draft_content.json`, `materials/` → `Resources/`)
+- [x] "비정상적인 경로" 에러 원인 3종 규명 + 자동 해결
+- [x] `root_meta_info.json` 전역 드래프트 레지스트리 자동 갱신
+- [x] ch01 수동 조립 빌드 → CapCut 8.5.0 정상 로드 (2026-04-21)
+- [x] **end-to-end 자동 빌더** ([skills/build-capcut-draft/build_draft.py](skills/build-capcut-draft/build_draft.py)) — 2026-04-27
+- [x] **자동 설치 + 레지스트리 갱신** ([skills/build-capcut-draft/install_draft.py](skills/build-capcut-draft/install_draft.py)) — 2026-04-27
+- [x] **자막 v2 (5필드 fix)** ([skills/build-capcut-draft/inject_subtitles_v2.py](skills/build-capcut-draft/inject_subtitles_v2.py)) — 2026-04-27 검증
+- [x] ch02 풀 검증 (이미지 23 + 오디오 23 + 자막 200) → CapCut 8.5.0 정상 로드, 자막 트랙 정상 배치
+- [x] inject_subtitles.py (v1) DEPRECATED 처리
+- [ ] `transition_hint` / `mood` / `era` 매핑 테이블 (v0.3, 추가 샘플 필요)
+- [ ] BGM 트랙 자동 추가 (v0.3)
+- [ ] Mac 검증

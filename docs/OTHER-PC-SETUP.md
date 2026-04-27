@@ -1,173 +1,225 @@
 # 다른 PC 에서 sceneweaver-capcut 사용하기
 
-이 문서는 이 repo 를 **처음** 자기 PC 에 clone / pull 받은 사용자를 위한 세팅 가이드다. CapCut 8.5.0 이상 데스크톱을 설치한 Windows 환경을 가정한다.
+이 문서는 이 repo 를 **처음** 자기 PC 에 clone / pull 받은 사용자를 위한 단계별 가이드다. CapCut 8.5.0 이상 데스크톱을 설치한 Windows 환경을 가정한다.
 
-> 한 줄 요약: CapCut 을 **한 번 열어서 아무 프로젝트라도 저장** 한 뒤에야 드래프트 디렉터리가 생긴다. 드래프트 폴더만 복사해서는 CapCut 목록에 **뜨지 않는다** — 전역 레지스트리(`root_meta_info.json`) 에 엔트리를 추가해야 한다.
+> **한 줄 요약**: 자산을 `workspace/ch{N}/{images, audio, subtitles}` 에 두고 → `python build_draft.py {N} && python inject_subtitles_v2.py {N} && python install_draft.py {N}` → CapCut 완전 종료 후 재실행 → 더블클릭 → 자동 배치된 영상·음성·자막 등장. 효과·BGM 만 수동 추가하면 끝.
+
+> ⚠ **중요**: CapCut 을 설치하자마자는 안 됨. **한 번 실행해서 아무 프로젝트라도 저장** 한 뒤에야 드래프트 디렉터리가 생긴다 (§1-1).
 
 ---
 
-## 1. 사전 준비
+## 1. 사전 준비 체크리스트
 
 ### 1-1. CapCut 첫 실행 (필수)
 
-설치 직후에는 `%LOCALAPPDATA%\CapCut\User Data\Projects\com.lveditor.draft\` 폴더 자체가 **존재하지 않는다**. 다음 단계로 강제 생성한다:
+설치 직후엔 `%LOCALAPPDATA%\CapCut\User Data\Projects\com.lveditor.draft\` 폴더가 **존재하지 않는다**. 강제 생성:
 
 1. CapCut 실행
-2. "새 프로젝트" → 아무 이미지/영상 1개 드래그 → "저장" (프로젝트 이름 임의)
-3. CapCut 종료 (X 버튼만으로는 부족 — 작업관리자에서 `CapCut.exe` 프로세스까지 모두 종료)
+2. "새 프로젝트" → 아무 이미지/영상 1개 드래그 → **"저장"** (이름 임의)
+3. CapCut 종료 — X 버튼만으로는 부족. **작업관리자 (Ctrl+Shift+Esc) 에서 `CapCut.exe` 프로세스까지 모두 종료**
 
 확인:
 
 ```powershell
-explorer "%LOCALAPPDATA%\CapCut\User Data\Projects\com.lveditor.draft"
+explorer "$env:LOCALAPPDATA\CapCut\User Data\Projects\com.lveditor.draft"
 ```
 
-이 폴더 안에 **`root_meta_info.json`** 파일과 방금 만든 프로젝트 폴더가 보여야 한다. 없으면 CapCut 버전/릴리스가 달라 경로가 다를 수 있다:
+이 폴더 안에 **`root_meta_info.json`** 과 방금 만든 프로젝트 폴더가 보여야 한다.
+
+CapCut 릴리스별 경로 차이:
 - 글로벌/한국 CapCut: `CapCut`
-- 중국 내수 Jianying: `JianyingPro` — 폴더 이름이 다름. `%LOCALAPPDATA%` 전체에서 `com.lveditor.draft` 문자열로 검색
+- 중국 내수 Jianying: `JianyingPro` — `%LOCALAPPDATA%` 전체에서 `com.lveditor.draft` 검색
 
 ### 1-2. Python + 이 repo
 
 ```bash
 git clone https://github.com/leedonwoo2827-ship-it/sceneweaver-capcut
 cd sceneweaver-capcut
-python --version   # 3.9+ 권장
+python --version   # 3.9+
 ```
 
-### 1-3. Claude Code 플러그인 (선택)
+외부 의존성 없음 (표준 라이브러리만).
 
-Claude Code 환경에서 `/weave-*` 슬래시 커맨드로 쓰려면:
+### 1-3. (선택) Claude Code 플러그인
+
+`/weave-*` 슬래시 커맨드로 쓰려면 Claude Code 안에서:
 
 ```
 /plugin marketplace add leedonwoo2827-ship-it/sceneweaver-capcut
 /plugin install sceneweaver-capcut@sceneweaver-capcut
 ```
 
-플러그인 없이 수동으로도 전부 가능.
+플러그인 없이 Python 명령 직접 호출도 가능.
 
 ---
 
-## 2. 작업 흐름 선택
+## 2. 자산 준비
 
-현재(v0.1.1) 세 가지 경로가 있다. **A안** 이 가장 확실하고, **B안** 은 Claude 와 반자동, **C안** 은 지금 시점엔 비권장.
+### 2-1. 폴더 구조
 
-### A안 — CapCut 안에서 수동 조립 (15분, 100% 동작)
-
-자동화 없이 CapCut UI 만으로 조립. 자산이 이미 챕터 폴더에 모여 있으면 가장 빠름.
-
-1. CapCut → 새 프로젝트
-2. 미디어 패널 → "폴더 가져오기" → 이미지 폴더 선택 (전체 임포트)
-3. 미디어 패널 → "폴더 가져오기" → 오디오 폴더 선택
-4. 이미지들 Shift 전체 선택 → 비디오 트랙 1 에 드래그 (순차 배치)
-5. 오디오들 전체 선택 → 오디오 트랙 1 에 드래그
-6. 각 이미지 클립 우클릭 → "재생 시간에 맞춤" 으로 해당 오디오 길이에 스냅
-7. 자막 패널 → "가져오기" → SRT 파일 로드
-
-**언제 이걸 쓰나**: 지금 영상을 완성해야 할 때, Claude 자동화를 기다릴 수 없을 때.
-
-### B안 — Claude 와 반자동 (ch01 재현 방식, 30-45분)
-
-이 repo 의 `/weave-*` 파이프라인을 쓰되, 드래프트 조립은 Claude 가 샘플 기반으로 직접 수행.
-
-**준비**: 상류 자산을 한 폴더에 모아둔다 (예: `D:\video-src\ch02\`):
-```
-D:\video-src\ch02\
-├── script\ch02_script.json       # ScriptForge 출력
-├── images\ch02_01_*.jpeg         # FlowGenie 출력
-│   ├── ...
-│   └── ch02_20_*.jpeg
-└── audio\01.wav                  # TTS 출력 (또는 ch02_01_narration.wav)
-    ├── ...
-    └── 20.wav
-```
-
-**실행**:
+빌더가 기대하는 워크스페이스:
 
 ```
-/weave-ingest 2 --script-path D:\video-src\ch02\script\ch02_script.json \
-                --images-dir D:\video-src\ch02\images \
-                --audio-dir D:\video-src\ch02\audio
+workspace/ch{NN}/
+├── images/             ← *.jpeg / *.jpg / *.png
+├── audio/              ← *.wav (이미지와 같은 개수)
+└── subtitles/          ← (선택) *.srt
 ```
 
-→ `workspace/ch02/` 에 정규화된 자산 생성.
+- 이미지·오디오 개수 일치 (정렬 순서로 1:1 페어링)
+- 이미지: `ch02_01_*.jpeg`, `ch02_02_*.jpeg` … 정렬되면 OK
+- 오디오: `01.wav`, `02.wav` … 또는 `ch02_01_narration.wav` … 정렬되면 OK
+- 자막: `ch02_full.srt` 합본 또는 단일 SRT 1개 권장
+
+### 2-2. ScriptForge 출력에서 옮기기
+
+ScriptForge 가 만든 자산이 `<자산루트>\ch02\` 같은 외부 폴더에 있다면, 다음만 옮기면 됨:
 
 ```
-/weave-subtitle 2
+<자산루트>\ch02\images\        →  workspace\ch02\images\
+<자산루트>\ch02\audio\         →  workspace\ch02\audio\
+<자산루트>\ch02\subtitles\     →  workspace\ch02\subtitles\
 ```
 
-→ `workspace/ch02/subtitles/ch02_full.srt` 생성. **에디터로 열어서** 타이밍/줄바꿈 손보고 저장 (UTF-8 BOM + CRLF 유지). 기본 생성 규칙: 한 줄 18자, 두 줄까지, 한 큐 36자 이하.
+`scripts/`, `workspace/`, `tts/` 등 다른 폴더는 빌더가 안 씀 — 옮기실 필요 없음.
 
-**드래프트 조립** — 여기서 Claude 에게 다음처럼 지시:
+---
 
-> "workspace/ch02 자산으로 CapCut 8.5.0 드래프트를 조립해줘. _assetst/0421 샘플의 draft_content.json / draft_meta_info.json 을 템플릿으로 사용하고, 2026-04-21 에 ch01 로 성공한 방식을 그대로 따라. 이미지 20장 + 오디오 20개 + SRT 1개."
-
-Claude 가 생성하는 것:
-- `workspace/ch02/draft/draft_content.json` — 타임라인 본체 (tracks, materials, canvas)
-- `workspace/ch02/draft/draft_meta_info.json` — UUID, 이름, `draft_materials` 3개 버킷(이미지 0, 오디오 0, 자막 2)
-- `workspace/ch02/draft/draft_cover.jpg`, 기타 부속 파일
-- `workspace/ch02/draft/Resources/` 에 자산 사본
-
-**설치 — 수동 복사**:
-
-```powershell
-$SRC = "D:\00work\260417-sceneweaver-capcut\workspace\ch02\draft"
-$DST = "$env:LOCALAPPDATA\CapCut\User Data\Projects\com.lveditor.draft\ch02_draft_20260424"
-Copy-Item -Path $SRC -Destination $DST -Recurse
-```
-
-폴더 이름은 `ch{NN}_draft_{YYYYMMDD}` 권장. 이 이름은 `draft_meta_info.json` 의 `draft_name` 과 **일치해야** 한다 (Claude 가 조립 시 같이 맞춤).
-
-**중요 — `root_meta_info.json` 에 엔트리 추가**:
-
-`com.lveditor.draft\root_meta_info.json` 을 연다. `all_draft_store` 배열이 있다. 기존 엔트리 하나를 복사해서 새 드래프트용으로 수정:
-
-```json
-{
-  "draft_cover": "C:\\Users\\<you>\\AppData\\Local\\CapCut\\User Data\\Projects\\com.lveditor.draft\\ch02_draft_20260424\\draft_cover.jpg",
-  "draft_fold_path": "C:\\Users\\<you>\\AppData\\Local\\CapCut\\User Data\\Projects\\com.lveditor.draft\\ch02_draft_20260424",
-  "draft_id": "<draft_meta_info.json 의 draft_id 와 동일 UUID>",
-  "draft_name": "ch02_draft_20260424",
-  "tm_draft_create": <현재시각 Unix ms>,
-  "tm_draft_modified": <현재시각 Unix ms>,
-  "...": "나머지 필드는 기존 엔트리에서 그대로 복제"
-}
-```
-
-저장 전 반드시 백업: `Copy-Item root_meta_info.json root_meta_info.json.bak`
-
-**자막 주입**:
+## 3. 한 줄 실행 (가장 일반적인 경우)
 
 ```bash
-python skills/build-capcut-draft/inject_subtitles.py \
-  "%LOCALAPPDATA%/CapCut/User Data/Projects/com.lveditor.draft/ch02_draft_20260424" \
-  "workspace/ch02/subtitles/ch02_full.srt"
+# 1. 자산 → 드래프트 폴더 (이미지/오디오만, 자막 없는 상태)
+python skills/build-capcut-draft/build_draft.py 02
+
+# 2. 자막 주입 (subtitles/*.srt 자동 탐지)
+python skills/build-capcut-draft/inject_subtitles_v2.py 02
+
+# 3. CapCut 디렉터리로 설치 + root_meta_info 갱신
+python skills/build-capcut-draft/install_draft.py 02
 ```
 
-**CapCut 재시작**: 트레이/작업관리자 프로세스까지 모두 종료 후 다시 실행. 드래프트 목록에 `ch02_draft_20260424` 가 보이고, 클릭하면 타임라인이 뜬다.
+각 단계 출력 예:
 
-### C안 — 자동화 빌더 (v0.2 대기)
+```
+[info] 자산 페어 23개 스캔
+[info] Resources/ 복사 완료, 합계 47,595,465 bytes
+[info] draft_content.json 생성, draft_id=606E1F6B-..., 길이 594.332초
+[ok] 빌드 완료: workspace/ch02/draft
 
-`/weave-draft 2 --install` 이 end-to-end 로 동작하게 만드는 작업은 v0.2 TODO. 아직 스크립트가 없다. 지금은 B안으로.
+[info] SRT cues parsed: 200
+[ok] 자막 200개 주입 완료
+
+[info] 폴더 복사 완료
+[info] root_meta_info.json 백업: root_meta_info.json.bak.20260427_112126
+[info] root_meta_info.json 갱신: all_draft_store 에 'ch02_draft_20260427' 추가
+[ok] 설치 완료
+```
+
+이후:
+1. **CapCut 완전 종료** (작업관리자에서 `CapCut.exe` 프로세스까지)
+2. CapCut 재실행
+3. 프로젝트 목록에서 `ch02_draft_{YYYYMMDD}` **더블클릭**
+4. 자동 배치된 영상·음성·자막 확인
+5. 효과·전환·BGM 만 수동 추가 → 렌더
 
 ---
 
-## 3. 트러블슈팅
+## 4. 세부 제어 (선택)
+
+### 4-1. 캔버스 / 폰트 / 폴더명
+
+```bash
+# 9:16 세로 영상
+python skills/build-capcut-draft/build_draft.py 02 --canvas-w 1080 --canvas-h 1920
+
+# 폰트 변경
+python skills/build-capcut-draft/inject_subtitles_v2.py 02 --font "C:/Windows/Fonts/NanumGothic.ttf"
+
+# 드래프트 폴더 이름 변경
+python skills/build-capcut-draft/build_draft.py 02 --name ch02_v2_test
+
+# 같은 이름 덮어쓰기 (재설치)
+python skills/build-capcut-draft/install_draft.py 02 --overwrite
+```
+
+### 4-2. 자막 없이 빌드
+
+`inject_subtitles_v2.py` 단계를 건너뛰면 자막 없는 드래프트가 됨. 자막은 CapCut UI 에서 수동 import 가능.
+
+### 4-3. 명시적 SRT 지정
+
+`subtitles/` 에 SRT 가 여러 개 있어 자동 탐지가 모호하면:
+
+```bash
+python skills/build-capcut-draft/inject_subtitles_v2.py \
+  --draft workspace/ch02/draft \
+  --srt workspace/ch02/subtitles/ch02_full.srt
+```
+
+---
+
+## 5. 결과 확인
+
+CapCut 에서 더블클릭했을 때 보여야 할 것:
+
+- **비디오 트랙**: 이미지 N개가 순차 배치, 각 클립의 길이는 해당 오디오 길이와 동일
+- **오디오 트랙**: wav N개가 순차 배치
+- **자막 트랙** (자막 주입 시): 빨간 "A" 마커들. SRT 의 시각·텍스트가 정확히 반영
+- **타임라인 총 길이**: 오디오 합과 일치
+
+```
+00:00 ─────────────────────────────────────────────  09:54
+       │ ch02_01 │ ch02_02 │ ... │ ch02_23 │   ← 비디오
+       │ 01.wav  │ 02.wav  │ ... │ 23.wav  │   ← 오디오
+       │ 자막 큐 200개 (개별 짧은 막대)        │   ← 자막
+```
+
+---
+
+## 6. 트러블슈팅
 
 | 증상 | 원인 | 해결 |
 |---|---|---|
-| 드래프트 폴더 복사했는데 CapCut 목록에 안 뜸 | `root_meta_info.json` 의 `all_draft_store` 에 엔트리 없음 | 위 B안 "중요" 섹션 대로 엔트리 추가 후 CapCut 완전 재시작 |
-| "비정상적인 경로" 에러 | `draft_meta_info.json` 의 `draft_fold_path`/`draft_root_path` 가 실제 위치와 불일치 | 복사 후 실제 경로로 문자열 치환 |
-| "미디어 없음" 표시 | `draft_materials[].file_Path` 의 절대경로에 파일이 없음 | 자산을 `<드래프트>/Resources/` 아래로 옮기고 `file_Path` 를 해당 경로로 재작성 |
-| 자막이 깨짐 | SRT 가 UTF-8 BOM + CRLF 가 아님 | 에디터에서 인코딩/개행 설정 후 재저장 |
-| `%LOCALAPPDATA%\CapCut\...` 경로가 없음 | CapCut 첫 실행/저장 안 함 | §1-1 단계 재수행 |
-| Claude 가 "v0.1 스텁이라 아무것도 없다" 라고 답함 | 오래된 문서만 보고 판단함 | `git pull` 후 [knowledge/capcut8-schema.md](../knowledge/capcut8-schema.md) 와 [skills/build-capcut-draft/SKILL.md](../skills/build-capcut-draft/SKILL.md) 최신 상태 확인 요청 |
+| **`%LOCALAPPDATA%\CapCut\...` 경로 없음** | CapCut 첫 실행/저장 안 함 | §1-1 재수행 |
+| **드래프트 목록에 안 보임** | `root_meta_info.json` 미갱신 (수동 폴더 복사한 경우) 또는 CapCut 캐시 | `install_draft.py` 사용. 또는 작업관리자에서 `CapCut.exe` 까지 종료 후 재시작 |
+| **더블클릭해도 안 열림** | 자막을 v1 (`inject_subtitles.py`) 으로 주입함 | v2 (`inject_subtitles_v2.py`) 로 다시 → `install_draft.py 02 --overwrite` |
+| **"비정상적인 경로" 에러** | `draft_fold_path` / `file_Path` 들이 실제 위치와 불일치 | `install_draft.py` 가 자동 갱신함. 수동 복사한 경우 발생 — `install_draft.py` 사용 권장 |
+| **"미디어 없음" 표시** | `Resources/` 안의 파일이 사라졌거나 path 가 잘못됨 | `install_draft.py 02 --overwrite` 로 재설치 |
+| **자막이 깨짐 / 안 나옴** | SRT 가 UTF-8 BOM + CRLF 가 아님 또는 v1 사용 | UTF-8 BOM 으로 재저장. v2 사용 확인 |
+| **이미지 개수 ≠ 오디오 개수 에러** | `images/` 와 `audio/` 의 파일 개수가 다름 | 양쪽 동일하게 맞추기. 정렬 순서로 페어링됨 |
+| **이전 드래프트가 사라짐** | CapCut UI 에서 폴더만 삭제 (root_meta 엔트리는 남음) | `python install_draft.py 02 --overwrite` 로 workspace 빌드 결과물 재설치 (자막까지 그대로 복원) |
 
 ---
 
-## 4. 관련 레퍼런스
+## 7. 알려진 한계
 
-- [knowledge/capcut8-schema.md](../knowledge/capcut8-schema.md) — v4.x → v8.x 차이, 실제 필드 관찰
-- [knowledge/capcut-draft-schema.md](../knowledge/capcut-draft-schema.md) — 레거시 v4.x 참고용
-- [knowledge/subtitle-style-guide.md](../knowledge/subtitle-style-guide.md) — SRT 생성 규칙
-- [_assetst/0421/](../_assetst/0421/) — CapCut 8.5.0 에서 저장한 최소 드래프트 샘플
-- [skills/build-capcut-draft/inject_subtitles.py](../skills/build-capcut-draft/inject_subtitles.py) — 자막 트랙 주입기
+- **전환·필터·BGM 은 수동**: 효과 자동 매핑은 v0.3 (추가 샘플 필요)
+- **Mac 미검증**: Windows 우선. Mac 도 경로만 다르고 동작할 가능성 높지만 미테스트
+- **CapCut 8.5.0 기준**: 더 새 버전에서 형식 바뀌면 재검증 필요. 깨질 시 정상 동작 샘플과 deep-diff
+- **자막 스타일 customization**: 현재 v2 는 ch01 기준 default (검정 배경, alpha 0.5). 박스색/음영 변경은 CapCut UI 에서 수동 (사용자가 그렇게 쓰고 있음)
+
+---
+
+## 8. 동작 원리 (간단히)
+
+내부에서 일어나는 일:
+
+1. **`build_draft.py`** — 0421 정상 샘플 + ch01 정상 샘플의 형식을 그대로 따라 `draft_content.json` (타임라인) + `draft_meta_info.json` (메타) + 부속 파일 8개 + 빈 폴더 7개 생성. 자료 참조 패턴 (segment.extra_material_refs) 도 ch01 정상값 그대로.
+
+2. **`inject_subtitles_v2.py`** — SRT 를 파싱해서 텍스트 트랙 + 자막 material 들을 생성. v1 이 깨진 5개 필드 (`check_flag=23`, `background_alpha=0.5`, `background_color="#000000"`, `background_style=1`, segment 의 `track_render_index=2`) 를 ch01 정상값으로 박아둠.
+
+3. **`install_draft.py`** — `%LOCALAPPDATA%\CapCut\...\com.lveditor.draft\` 로 폴더 복사 + `draft_content.json` / `draft_meta_info.json` 의 path 필드들을 실제 설치 위치 기준으로 재작성 + `root_meta_info.json` 의 `all_draft_store[]` 에 새 엔트리 등록 (백업 자동 생성).
+
+상세: [knowledge/capcut8-schema.md](../knowledge/capcut8-schema.md), [skills/build-capcut-draft/SKILL.md](../skills/build-capcut-draft/SKILL.md)
+
+---
+
+## 9. 관련 파일
+
+- [skills/build-capcut-draft/build_draft.py](../skills/build-capcut-draft/build_draft.py)
+- [skills/build-capcut-draft/inject_subtitles_v2.py](../skills/build-capcut-draft/inject_subtitles_v2.py)
+- [skills/build-capcut-draft/install_draft.py](../skills/build-capcut-draft/install_draft.py)
+- [skills/build-capcut-draft/templates/](../skills/build-capcut-draft/templates/) — 부속 파일 템플릿
+- [skills/build-capcut-draft/SKILL.md](../skills/build-capcut-draft/SKILL.md) — 스크립트 명세
+- [knowledge/capcut8-schema.md](../knowledge/capcut8-schema.md) — CapCut 8.x 스키마 분석
+- [skills/build-capcut-draft/inject_subtitles.py](../skills/build-capcut-draft/inject_subtitles.py) — DEPRECATED v1 (참고용 보존)

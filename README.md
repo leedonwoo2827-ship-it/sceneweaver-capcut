@@ -1,10 +1,10 @@
 # SceneWeaver-CapCut
 
-ScriptForge의 마스터 대본과 FlowGenie/TTS의 산출물을 모아, **CapCut 8.x 데스크톱이 직접 열 수 있는 드래프트 폴더**를 생성하는 Claude Code 플러그인.
+ScriptForge의 마스터 대본과 FlowGenie/TTS의 산출물을 모아, **CapCut 8.x 데스크톱이 더블클릭만 하면 열리는 드래프트 폴더**를 생성하는 Claude Code 플러그인.
 
 > **자매 레포**: [sceneweaver](https://github.com/leedonwoo2827-ship-it/sceneweaver) — 같은 상류 자산을 받아 **FFmpeg로 mp4를 직접 렌더**하는 버전. NLE 없이 완성 영상까지 끝내고 싶으면 그쪽.
->
-> ⚠ **v0.1 — 스키마 분석 진행 중**: 현재 빌더는 인터페이스 명세와 뼈대만 있습니다. CapCut 8.5.0 샘플 JSON을 기반으로 실체 빌드 로직을 구현하는 것이 다음 작업.
+
+> ✅ **v0.2.0 — 풀 자동화 검증 완료 (2026-04-27)**: 한 줄 명령으로 워크스페이스 자산 → CapCut 정상 로드 가능 드래프트. 자막 자동 트랙 배치 동작 (ch02: 이미지 23 + 오디오 23 + 자막 200 cue 검증 통과).
 
 ## 파이프라인 위치
 
@@ -17,123 +17,131 @@ StoryLens → ScriptForge → FlowGenie + TTS → [SceneWeaver-CapCut]
   - [ScriptForge](https://github.com/leedonwoo2827-ship-it/scriptforge): `ch{NN}_script.json`
   - FlowGenie: `ch{NN}_{SS}_*.{png,jpg,jpeg}`
   - TTS: `ch{NN}_{SS}_narration.{mp3,wav}`
-- **하류**: CapCut 8.5.0+ 데스크톱. 사용자가 드래프트 폴더를 열어 최종 편집·렌더.
+- **하류**: CapCut 8.5.0+ 데스크톱. 사용자가 더블클릭 → 자동 배치된 영상·음성·자막 → 효과·전환·BGM 만 수동 추가 → 렌더.
 
 ## 설치
+
+### 옵션 A — Claude Code 플러그인 (슬래시 커맨드)
 
 ```
 /plugin marketplace add leedonwoo2827-ship-it/sceneweaver-capcut
 /plugin install sceneweaver-capcut@sceneweaver-capcut
 ```
 
-설치 후 `/weave`, `/weave-ingest`, `/weave-subtitle`, `/weave-draft` 커맨드 활성화. 업데이트: `/plugin update sceneweaver-capcut@sceneweaver-capcut`.
+설치 후 `/weave`, `/weave-ingest`, `/weave-subtitle`, `/weave-draft` 활성화.
+업데이트: `/plugin update sceneweaver-capcut@sceneweaver-capcut`.
+
+### 옵션 B — 직접 clone (Python 만 사용)
+
+```bash
+git clone https://github.com/leedonwoo2827-ship-it/sceneweaver-capcut
+cd sceneweaver-capcut
+# Python 3.9+ 만 있으면 됨, 외부 의존성 없음
+```
 
 ## 사전 준비
 
-1. **CapCut 8.5.0 이상** 데스크톱 설치 (Windows/Mac)
-2. **상류 자산** — ScriptForge/FlowGenie/TTS 출력을 직접 쓰거나, 외부 스테이징 폴더에 수동으로 모아서 사용
-3. **Claude Code** (이 플러그인이 도는 환경)
+1. **CapCut 8.5.0 이상** 데스크톱 설치 (Windows 우선 지원)
+2. **CapCut 을 한 번이라도 실행해서 아무 프로젝트라도 저장** — `%LOCALAPPDATA%\CapCut\...\com.lveditor.draft\` 디렉터리와 `root_meta_info.json` 이 생성되어야 함. 처음 깐 직후엔 없음.
+3. **Python 3.9+**
+4. **상류 자산** — ScriptForge/FlowGenie/TTS 출력 또는 외부 스테이징 폴더에 모은 자료
 
-## 폴더 구조
+처음 받으신 분은 **[docs/OTHER-PC-SETUP.md](docs/OTHER-PC-SETUP.md)** 의 단계별 절차 권장.
 
-### 최초 (ingest 실행 전 — 외부 스테이징 폴더)
+## 자산 폴더 구조
 
-상류 3개 프로젝트를 거치지 않고 구글드라이브 등에서 받은 자산을 수동으로 모은 경우의 원본 보관 구조. `<자산루트>` 는 본인이 자산을 모아둔 임의의 폴더 (예: `D:\video-src`, `C:\자료` 등 — 환경에 맞게).
-
-```
-<자산루트>\ch02\
-├── script\ch02_script.json
-├── images\                      ← 이미지 로데이터
-│   ├── ch02_01_*.jpeg
-│   ├── ...
-│   └── ch02_20_*.jpeg
-└── audio\                       ← 음성 로데이터
-    ├── 01.wav  (또는 1.wav)
-    ├── ...
-    └── 20.wav
-```
-
-ingest가 `.jpeg`/`.wav`/숫자 전용 이름을 자동 정규화.
-
-### 드래프트 빌드 후 (`/weave-draft` 실행 후 예정)
+빌더가 기대하는 워크스페이스:
 
 ```
-workspace/ch02/
-├── script.json
-├── images/, audio/, subtitles/
-└── draft/                                    ← ★ CapCut 드래프트
-    ├── draft_content.json                    (v8.x 메인)
-    ├── draft_meta_info.json
-    ├── draft_cover.jpg
-    ├── (v8.x 부속 파일들)
-    └── Resources/
-        ├── ch02_{SS}_image.jpeg
-        ├── ch02_{SS}_narration.wav
-        └── ch02_{SS}.srt
+workspace/ch{NN}/
+├── images/             ← *.jpeg / *.jpg / *.png (정렬된 파일명)
+├── audio/              ← *.wav (이미지와 같은 개수)
+└── subtitles/          ← (선택) *.srt
 ```
 
-## 실행 순서 (v0.1.1 — 인터페이스 기준)
+- 이미지·오디오 개수 일치, 정렬 순서로 1:1 페어링
+- 자막은 `ch{NN}_full.srt` 합본 또는 단일 SRT
 
-> 아래 경로의 `<자산루트>` 는 **자리표시자** 입니다. 본인 PC 의 실제 자산 폴더로 바꾸세요 (예: `D:\video-src`, `C:\자료`). 처음 쓰시는 분은 [docs/OTHER-PC-SETUP.md](docs/OTHER-PC-SETUP.md) 를 먼저 읽기 권장.
+## 실행 — v0.2 자동화
 
-**1단계 — 자산 수집**
-```
-/weave-ingest 2 --script-path <자산루트>\ch02\script\ch02_script.json \
-                --images-dir <자산루트>\ch02\images \
-                --audio-dir <자산루트>\ch02\audio
-```
+### 한 줄 흐름
 
-**2단계 — 자막 생성**
-```
-/weave-subtitle 2
-```
-→ `workspace/ch02/subtitles/` SRT 편집 → "수정 끝났어"
+```bash
+# 1. 빌드
+python skills/build-capcut-draft/build_draft.py 02
 
-**3단계 — CapCut 드래프트 빌드**
-```
-/weave-draft 2 --install
-```
-→ `%LOCALAPPDATA%\CapCut\User Data\Projects\com.lveditor.draft\` 자동 복사. CapCut 재시작 → 드래프트 목록에서 열기. (v0.1.1 현재 자동 빌더는 미완 — Claude 와 반자동 진행 방식은 [docs/OTHER-PC-SETUP.md](docs/OTHER-PC-SETUP.md) §2 B안 참고.)
+# 2. 자막 주입 (선택)
+python skills/build-capcut-draft/inject_subtitles_v2.py 02
 
-**한 방 실행**
-```
-/weave 2 --script-path <자산루트>\ch02\script\ch02_script.json \
-         --images-dir <자산루트>\ch02\images \
-         --audio-dir <자산루트>\ch02\audio \
-         --install
+# 3. CapCut 으로 설치
+python skills/build-capcut-draft/install_draft.py 02
 ```
 
-## 현재 상태 (v0.1)
+→ CapCut 완전 종료 후 재실행 → 프로젝트 목록에서 `ch02_draft_{YYYYMMDD}` 더블클릭 → 자동 배치된 영상·음성·자막 확인 → 효과·BGM 만 수동 추가하여 렌더.
+
+### 옵션
+
+각 스크립트의 `--help` 참고. 핵심 옵션:
+
+- `build_draft.py 02 --canvas-w 1920 --canvas-h 1080` — 캔버스 변경
+- `inject_subtitles_v2.py 02 --font "C:/Windows/Fonts/NanumGothic.ttf"` — 폰트 변경
+- `install_draft.py 02 --overwrite` — 동명 드래프트 덮어쓰기 (재설치)
+
+## 산출물
+
+```
+workspace/ch{NN}/draft/                       ← build_draft.py 결과
+├── draft_content.json                        # 타임라인 본체
+├── draft_meta_info.json                      # 메타·자료 인덱스
+├── draft_cover.jpg
+├── (부속 8개 + 빈 폴더 7개)
+└── Resources/                                # 자산 사본
+    ├── ch{NN}_*.jpeg
+    ├── *.wav
+    └── ch{NN}_full.srt   (자막 주입 시)
+```
+
+설치 후 위치:
+```
+%LOCALAPPDATA%\CapCut\User Data\Projects\com.lveditor.draft\ch{NN}_draft_{YYYYMMDD}\
+```
+
+## 현재 상태 (v0.2.0)
 
 | 항목 | 상태 |
 |---|---|
-| 프로젝트 뼈대 | ✅ sceneweaver v0.3에서 분기 |
-| 상류 자산 ingest (`.jpeg`/`.wav`/숫자명 정규화) | ✅ 기존 로직 승계 |
-| SRT 자막 생성 + 편집 개입 | ✅ 기존 로직 승계 |
-| CapCut 8.x 샘플 JSON 확보 | ✅ [`_assetst/0421/`](_assetst/0421/) |
-| CapCut 8.x 스키마 분석 | 🔄 진행 중 — [knowledge/capcut8-schema.md](knowledge/capcut8-schema.md) |
-| `draft_content.json` 필드 매핑 | 🔄 샘플 기반 수동 조립 성공 (2026-04-21) |
-| **`root_meta_info.json` 전역 레지스트리 발견** | ✅ 드래프트 목록에 뜨려면 `all_draft_store` 에 엔트리 추가 필요 |
-| ch01 실빌드 → CapCut 8.5.0 열기 검증 | ✅ **성공 (2026-04-21)** — 씬 20 + 오디오 20 타임라인 정상, 길이 8:01 |
-| 자막 자동 import | ⏳ 다음 세션 (현재는 CapCut UI에서 Import → Subtitle 수동) |
-| `build-capcut-draft` v0.2 자동화 | ⏳ 다음 세션 |
+| 프로젝트 뼈대 | ✅ |
+| 상류 자산 ingest | ✅ |
+| SRT 자막 생성 + 편집 개입 | ✅ |
+| CapCut 8.x 스키마 분석 | ✅ [knowledge/capcut8-schema.md](knowledge/capcut8-schema.md) |
+| **풀 자동 빌더** (`build_draft.py`) | ✅ 2026-04-27 검증 |
+| **자동 설치 + `root_meta_info.json` 갱신** (`install_draft.py`) | ✅ 2026-04-27 검증 |
+| **자막 자동 트랙 배치** (`inject_subtitles_v2.py`) | ✅ 2026-04-27 검증 (5필드 fix) |
+| ch02 풀 검증 (이미지 23 + 오디오 23 + 자막 200) | ✅ CapCut 8.5.0 정상 로드 |
+| `transition_hint` / `mood` / `era` → CapCut 효과 ID 매핑 | ⏳ v0.3 (추가 샘플 필요) |
+| BGM 트랙 자동 추가 | ⏳ v0.3 |
+| Mac 지원 | ⏳ 미검증 |
 
 ## 왜 별도 레포인가
 
-원래 sceneweaver (v0.2)는 CapCut 4.x 스키마를 가정했지만, CapCut 8.5.0 에서 **"비정상적인 경로" 에러**로 드래프트를 거부함이 확인됨(2026-04-20). v0.3에서 sceneweaver는 FFmpeg 직렌더로 완전히 방향을 바꿨고, CapCut 타겟을 여전히 원하는 사용 사례를 위해 **이 레포(`sceneweaver-capcut`)** 를 분기 생성했다. 두 플러그인은 상류(ingest, subtitle)를 공유하지만 하류가 다르다:
+원래 sceneweaver (v0.2)는 CapCut 4.x 스키마를 가정했지만, CapCut 8.5.0 에서 **"비정상적인 경로" 에러** 로 거부됨이 확인됨 (2026-04-20). v0.3 에서 sceneweaver 는 FFmpeg 직렌더로 방향 전환했고, CapCut 타겟을 여전히 원하는 사용 사례를 위해 이 레포(`sceneweaver-capcut`)를 분기 생성.
 
 - **sceneweaver**: `ch{NN}.mp4` 한 파일 → 바로 업로드/배포
-- **sceneweaver-capcut** (이 레포): `draft/` 폴더 → CapCut 8.x에서 열어 편집
-
-## 다른 PC 에서 처음 쓰시나요
-
-[docs/OTHER-PC-SETUP.md](docs/OTHER-PC-SETUP.md) 에 **처음 clone/pull 받은 분을 위한 전체 세팅 가이드** 가 있습니다. CapCut 첫 실행 체크리스트, 수동 조립 (A안) / Claude 반자동 (B안) 흐름, `root_meta_info.json` 전역 레지스트리 수정법, 트러블슈팅 표 포함.
+- **sceneweaver-capcut** (이 레포): `draft/` 폴더 → CapCut 8.x 더블클릭 → 편집
 
 ## 문제 해결
 
-- **"비정상적인 경로" 에러** — CapCut 4.x 스키마로 만든 드래프트는 8.x에서 열리지 않음. 이 레포가 해결하려는 문제.
-- **자막이 깨진다** — SRT 인코딩 UTF-8 BOM + CRLF, 타이밍 `HH:MM:SS,mmm` 형식 확인.
-- **드래프트 목록에 안 보임** — 두 가지 원인. (1) `%LOCALAPPDATA%\CapCut\User Data\Projects\com.lveditor.draft\root_meta_info.json` 의 `all_draft_store` 에 드래프트 엔트리가 없음 (단순 폴더 복사만으로는 안 보임). (2) CapCut 프로세스가 트레이/작업관리자에 남아있어 캐시된 목록 표시. 상세는 [docs/OTHER-PC-SETUP.md](docs/OTHER-PC-SETUP.md) §3 참고.
+- **드래프트가 목록에 안 보임** — `install_draft.py` 가 `root_meta_info.json` 의 `all_draft_store[]` 에 엔트리를 추가했는지 확인. 또한 CapCut 을 작업관리자 프로세스까지 완전 종료 후 재시작.
+- **더블클릭해도 안 열림** — 자막 주입을 v1 (`inject_subtitles.py`) 으로 한 경우. v2 (`inject_subtitles_v2.py`) 로 다시 주입 후 `install_draft.py --overwrite` 재실행.
+- **"비정상적인 경로" 에러** — `install_draft.py` 가 path 필드들을 자동 갱신하니 정상 절차로 설치하면 발생 안 함. 발생 시 `draft_content.json` / `draft_meta_info.json` 의 `file_Path` 들을 확인.
+- **자막이 깨진다** — SRT 인코딩 UTF-8 BOM + CRLF (또는 LF), 타이밍 `HH:MM:SS,mmm` 형식.
+- **CapCut 디렉터리가 없다고 나옴** — CapCut 을 한 번도 실행 안 한 상태. 실행 → 아무 프로젝트라도 저장 → 종료 → 재시도.
+
+상세 트러블슈팅: [docs/OTHER-PC-SETUP.md](docs/OTHER-PC-SETUP.md) §6.
+
+## 다른 PC 에서 처음 쓰시나요
+
+**[docs/OTHER-PC-SETUP.md](docs/OTHER-PC-SETUP.md)** 에 처음 clone/pull 받은 분을 위한 단계별 가이드가 있습니다. CapCut 첫 실행 체크리스트부터 자동화 한 줄 실행, 트러블슈팅까지 전부.
 
 ## 라이선스
 
