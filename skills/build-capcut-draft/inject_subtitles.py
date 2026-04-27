@@ -1,6 +1,26 @@
 """
 sceneweaver-capcut v0.1.1 — 자막 트랙 자동 주입
 
+╔═══════════════════════════════════════════════════════════════╗
+║  ⚠ DEPRECATED — 이 v1 은 CapCut 8.5.0 이 거부합니다.         ║
+║                                                                ║
+║  대신 inject_subtitles_v2.py 를 사용하세요.                    ║
+║                                                                ║
+║  거부 원인 (2026-04-27 deep-diff 로 확보):                     ║
+║    text material:                                              ║
+║      check_flag         7  →  23                              ║
+║      background_alpha   1.0 → 0.5                             ║
+║      background_color   "" → "#000000"                        ║
+║      background_style   0  →  1                               ║
+║    segment:                                                    ║
+║      track_render_index 1  →  2                               ║
+║                                                                ║
+║  v2 는 위 5개 필드를 ch01 정상 동작 기준으로 보정.              ║
+║  v1 은 호환성을 위해 보존하되 신규 사용 금지.                   ║
+╚═══════════════════════════════════════════════════════════════╝
+
+원래 docstring (참고용):
+
 기존 CapCut 8.x 드래프트 폴더의 draft_content.json 에 자막 트랙을
 추가하고, draft_meta_info.json 의 draft_materials[type=2] 에
 SRT 엔트리를 등록한다. SRT 규격: UTF-8 BOM + CRLF, 큐 시간은
@@ -8,14 +28,19 @@ HH:MM:SS,mmm → 초 → 마이크로초(μs) 변환.
 
 스키마 출처: _assetst/0421-subs 샘플 (2026-04-21 diff).
 
-사용:
+사용 (DEPRECATED — 사용 금지):
     python inject_subtitles.py <draft_dir> <srt_path>
-
-예:
-    python inject_subtitles.py \
-      "C:/Users/leedonwoo/AppData/Local/CapCut/User Data/Projects/com.lveditor.draft/ch01_draft_20260421" \
-      "D:/cl150y/ch01/subtitles/ch01_full.srt"
 """
+
+import sys
+print("=" * 60, file=sys.stderr)
+print(" DEPRECATED: inject_subtitles.py (v1)", file=sys.stderr)
+print(" → 대신 inject_subtitles_v2.py 사용하세요.", file=sys.stderr)
+print(" 자세한 내용은 이 파일의 docstring 참고.", file=sys.stderr)
+print("=" * 60, file=sys.stderr)
+sys.exit(2)
+# 아래 원본 코드는 호환성을 위해 보존 (실행은 위에서 차단됨)
+# ----------------------------------------------------------------
 
 import json
 import re
