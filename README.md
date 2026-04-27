@@ -50,10 +50,10 @@ cd sceneweaver-capcut
 
 ## 자산 폴더 구조
 
-빌더가 기대하는 워크스페이스:
+**clone 한 레포 폴더 안의 `workspace/ch{NN}/` 에 배치를 권장** — 슬래시 커맨드는 `--workspace` 옵션을 안 받고, `.gitignore` 가 `workspace/` 를 제외하므로 깃에 안 올라갑니다. 외부 드라이브에 두려면 Python 직접 호출 + `--workspace <경로>` 만 가능.
 
 ```
-workspace/ch{NN}/
+<clone 위치>\sceneweaver-capcut\workspace\ch{NN}\
 ├── images/             ← *.jpeg / *.jpg / *.png (정렬된 파일명)
 ├── audio/              ← *.wav (이미지와 같은 개수)
 └── subtitles/          ← (선택) *.srt
@@ -61,6 +61,8 @@ workspace/ch{NN}/
 
 - 이미지·오디오 개수 일치, 정렬 순서로 1:1 페어링
 - 자막은 `ch{NN}_full.srt` 합본 또는 단일 SRT
+
+상세: [docs/OTHER-PC-SETUP.md §2](docs/OTHER-PC-SETUP.md)
 
 ## 실행 — v0.2 자동화
 

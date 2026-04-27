@@ -55,7 +55,35 @@ python --version   # 3.9+
 
 ## 2. 자산 준비
 
-### 2-1. 폴더 구조
+### 2-1. 어디에 두는 게 좋은가
+
+**권장**: clone 한 레포 폴더 안의 `workspace/ch{NN}/` 에 배치.
+
+```
+<clone 위치>\sceneweaver-capcut\
+├── skills\
+├── commands\
+├── workspace\                    ← ★ 여기에 자산 (gitignore 됨, 깃에 안 올라감)
+│   └── ch{NN}\
+│       ├── images\
+│       ├── audio\
+│       └── subtitles\
+└── ...
+```
+
+이유:
+- **기본 경로** — `/weave-draft 03` 도 `python build_draft.py 03` 도 옵션 없이 그냥 동작 (슬래시 커맨드는 `--workspace` 노출 안 함)
+- **`.gitignore` 가 `workspace/` 제외** — 자산이 깃에 올라갈 일 없음
+- **레포 안에 같이 있어 헷갈림 적음** — 자산·드래프트·스크립트가 한 트리
+
+**외부 드라이브에 두고 싶으면** (Python 직접 호출만 가능, 슬래시 커맨드 불가):
+
+```bash
+# 자산을 D:\작업\ch03\{images,audio,subtitles} 에 두고
+python skills/build-capcut-draft/build_draft.py 03 --workspace D:\작업
+```
+
+### 2-2. 폴더 구조
 
 빌더가 기대하는 워크스페이스:
 
@@ -71,7 +99,7 @@ workspace/ch{NN}/
 - 오디오: `01.wav`, `02.wav` … 또는 `ch02_01_narration.wav` … 정렬되면 OK
 - 자막: `ch02_full.srt` 합본 또는 단일 SRT 1개 권장
 
-### 2-2. ScriptForge 출력에서 옮기기
+### 2-3. ScriptForge 출력에서 옮기기
 
 ScriptForge 가 만든 자산이 `<자산루트>\ch02\` 같은 외부 폴더에 있다면, 다음만 옮기면 됨:
 
