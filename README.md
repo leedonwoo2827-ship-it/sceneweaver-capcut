@@ -38,10 +38,10 @@ StoryLens → ScriptForge → FlowGenie + TTS → [SceneWeaver-CapCut]
 
 ### 최초 (ingest 실행 전 — 외부 스테이징 폴더)
 
-상류 3개 프로젝트를 거치지 않고 구글드라이브 등에서 받은 자산을 수동으로 모은 경우의 원본 보관 구조. 예: `D:\cl150y\ch02\`.
+상류 3개 프로젝트를 거치지 않고 구글드라이브 등에서 받은 자산을 수동으로 모은 경우의 원본 보관 구조. `<자산루트>` 는 본인이 자산을 모아둔 임의의 폴더 (예: `D:\video-src`, `C:\자료` 등 — 환경에 맞게).
 
 ```
-D:\cl150y\ch02\
+<자산루트>\ch02\
 ├── script\ch02_script.json
 ├── images\                      ← 이미지 로데이터
 │   ├── ch02_01_*.jpeg
@@ -72,11 +72,15 @@ workspace/ch02/
         └── ch02_{SS}.srt
 ```
 
-## 실행 순서 (v0.1 — 인터페이스 기준)
+## 실행 순서 (v0.1.1 — 인터페이스 기준)
+
+> 아래 경로의 `<자산루트>` 는 **자리표시자** 입니다. 본인 PC 의 실제 자산 폴더로 바꾸세요 (예: `D:\video-src`, `C:\자료`). 처음 쓰시는 분은 [docs/OTHER-PC-SETUP.md](docs/OTHER-PC-SETUP.md) 를 먼저 읽기 권장.
 
 **1단계 — 자산 수집**
 ```
-/weave-ingest 2 --script-path D:\cl150y\ch02\script\ch02_script.json --images-dir D:\cl150y\ch02\images --audio-dir D:\cl150y\ch02\audio
+/weave-ingest 2 --script-path <자산루트>\ch02\script\ch02_script.json \
+                --images-dir <자산루트>\ch02\images \
+                --audio-dir <자산루트>\ch02\audio
 ```
 
 **2단계 — 자막 생성**
@@ -89,11 +93,14 @@ workspace/ch02/
 ```
 /weave-draft 2 --install
 ```
-→ `%LOCALAPPDATA%\CapCut\User Data\Projects\com.lveditor.draft\` 자동 복사. CapCut 재시작 → 드래프트 목록에서 열기.
+→ `%LOCALAPPDATA%\CapCut\User Data\Projects\com.lveditor.draft\` 자동 복사. CapCut 재시작 → 드래프트 목록에서 열기. (v0.1.1 현재 자동 빌더는 미완 — Claude 와 반자동 진행 방식은 [docs/OTHER-PC-SETUP.md](docs/OTHER-PC-SETUP.md) §2 B안 참고.)
 
 **한 방 실행**
 ```
-/weave 2 --script-path ... --images-dir ... --audio-dir ... --install
+/weave 2 --script-path <자산루트>\ch02\script\ch02_script.json \
+         --images-dir <자산루트>\ch02\images \
+         --audio-dir <자산루트>\ch02\audio \
+         --install
 ```
 
 ## 현재 상태 (v0.1)
